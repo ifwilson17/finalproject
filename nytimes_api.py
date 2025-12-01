@@ -1,25 +1,53 @@
-API_KEY = ""
+import requests
+import json
+import my_key
 
-def get_nyt_reviews(movie_titles):
-    base_url = "https://api.nytimes.com/svc/movies/v2/reviews/search.json"
-    reviews_list = []
+def get_nyt_movie_articles(movie_title):
+    url = "https://api.nytimes.com/svc/search/v2/articlesearch.json"
+    
+    params = {
+        "q": movie_title, 
+        "api-key": my_key.API_KEY,
 
-    for title in movie_titles: 
-        params = {'query': title, 'apikey': API_KEY}
+    }
 
-        try: 
-            response = requests.get(base_url, params)
-            data = json.loads(response.text)
-        except: 
-            print("Request Failed")
-            continue
+    headers = {
+        "User-Agent": "SI201-finalproject", 
+        "Accept": "application/json"
+    }
 
-        results = data.get("results")
-        if not results: 
-            continue 
-        
-        
+    response = requests.get(url, params=params, headers=headers)
+    print("STATUS", response.status_code)
 
-        reviews_list.append(reviews_dict)
+    if response.status_code != 200: 
+        print("Request failed")
+        return []
+    
+    data = response.json()
+    docs = data.get("response", {}).get("docs", [])
 
-    return reviews_list
+    if not docs:
+        print("No articles found for:", movie_title)
+        return []
+
+    results = []
+
+    for d in docs[:1]: 
+        article = {
+            "movie_title": movie_title, 
+            "headline": d.get("headline", {}).get("main", "No headline"),
+            "summary": d.get("abstract", "No summary"), 
+            "section": d.get("section_name"), 
+            "byline": d.get("byline", {}).get("original"),
+            "date": d.get("pub_date")
+        }
+
+        results.append(article)
+
+    return results
+
+
+
+if __name__ == "__main__":
+    print(get_nyt_movie_articles("Shrek"))
+    print(get_nyt_movie_articles("Barbie"))
